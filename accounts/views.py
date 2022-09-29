@@ -191,11 +191,6 @@ class Users(APIView):
 
 @api_view(["POST"])
 def sign_up(request):
-    if User.objects.filter(email=email).exists():
-        return DjangoRestResponse(
-            {"status": "Error", "message": f"Email already exists"},
-            status=status.HTTP_200_OK,
-        )
     email = request.data["email"]
     password = request.data["password"]
     username = request.data["username"]
@@ -204,6 +199,11 @@ def sign_up(request):
     last_name = request.data["last_name"]
     contact = request.data["contact"]
 
+    if User.objects.filter(email=email).exists():
+        return DjangoRestResponse(
+            {"status": "Error", "message": f"Email already exists"},
+            status=status.HTTP_200_OK,
+        )
     try:
         role_name = request.data[
             "role_name"

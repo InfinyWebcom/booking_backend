@@ -17,4 +17,4 @@ from django.contrib import admin
 from django.urls import path, include
 from slotapp.views.slot import SlotList
 
-urlpatterns = [path("", SlotList.as_view(), name="")]
+urlpatterns = [path("slot", SlotList.as_view(), name="")]

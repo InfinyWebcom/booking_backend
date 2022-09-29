@@ -14,6 +14,16 @@ from organizations.serializers.property_serializer import (
     PropertySerializer,
     AmenitySerializer,
 )
+import base64
+from django.core.files.base import ContentFile
+import uuid
+
+
+def base64_to_image(base64_string):
+    format, imgstr = base64_string.split(";base64,")
+    ext = format.split("/")[-1]
+    data = ContentFile(base64.b64decode(imgstr), name=uuid.uuid4().hex + "." + ext)
+    return data
 
 
 class Properties(APIView):
@@ -71,10 +81,10 @@ class Properties(APIView):
 
             """
             try:
-                
+
                 images = dict((request.data).lists())["images"]
                 print(f"Debug : image file name : {images}")
-               
+
             except KeyError:
                 raise ParseError("Request has no image file attached")
             """
@@ -87,6 +97,7 @@ class Properties(APIView):
             for amenity in amenities_list:
                 print(amenity)
             print(amenities_list, type(amenities_list))
+
             try:
                 turf_category = request.data[
                     "turf_category"
@@ -103,7 +114,7 @@ class Properties(APIView):
                 )
 
             user_obj = User.objects.get(pk=request.user.id)
-            # """
+
             property_object, created = Property.objects.get_or_create(
                 name=name,
                 city=city,
@@ -130,7 +141,7 @@ class Properties(APIView):
                     {"status": "Error", "message": "Property already present."},
                     status=status.HTTP_200_OK,
                 )
-            # """
+
             # return DjangoRestResponse(
             #     {"status": "comming", "message": "ok"},
             #     status=status.HTTP_200_OK,

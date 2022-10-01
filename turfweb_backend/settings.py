@@ -16,8 +16,17 @@ from pathlib import Path
 env = environ.Env(
     EMAIL_HOST_USER=str,
     EMAIL_HOST_PASSWORD=str,
+    AWS_ACCESS_KEY_ID=str,
+    AWS_SECRET_ACCESS_KEY=str,
+    REGION_NAME=str,
 )
 environ.Env.read_env()
+
+# aws credentials
+AWS_ACCESS_KEY_ID = env("AWS_ACCESS_KEY_ID")
+AWS_SECRET_ACCESS_KEY = env("AWS_SECRET_ACCESS_KEY")
+REGION_NAME = env("REGION_NAME")
+
 # Build paths inside the project like this: BASE_DIR / 'subdir'.
 BASE_DIR = Path(__file__).resolve().parent.parent
 

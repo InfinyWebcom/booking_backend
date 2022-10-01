@@ -1,13 +1,14 @@
 from django.urls import path
 
-from organizations.views.property import Properties
+from organizations.views.property import Properties, aws_client
 from organizations.views.booking import Booking
 from organizations.views.categories import Categories
-from organizations.views.state_city import state, city, city_by_state,amenities
+from organizations.views.state_city import state, city, city_by_state, amenities
 from organizations.views.dashboard import get_statistics
 
 urlpatterns = [
     path("properties", Properties.as_view(), name="properties"),
+    path("aws-client", aws_client, name="aws-client"),
     path("booking", Booking.as_view(), name="booking"),
     path("turf-categories", Categories.as_view(), name="turf-categories"),
     path("state", state, name="state"),

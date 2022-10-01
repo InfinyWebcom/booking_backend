@@ -51,24 +51,23 @@ def slots(property_obj):
     print("making slot for : ", property_obj)
     property_object = property_obj
     days = {
-        "Monday": [
+        "Saturday": [
             {"start_time": "00:00", "end_time": "13:00", "slot_duration": 120},
             {"start_time": "15:00", "end_time": "18:00", "slot_duration": 60},
         ],
-        "Wednesday": [
-            {"start_time": "9:00", "end_time": "18:00", "slot_duration": 120}
-        ],
-        "Friday": [
+        "Sunday": [{"start_time": "9:00", "end_time": "18:00", "slot_duration": 120}],
+        "Tuesday": [
             {"start_time": "10:00", "end_time": "13:00", "slot_duration": 120},
             {"start_time": "15:00", "end_time": "19:00", "slot_duration": 60},
         ],
     }
 
     now = datetime.now()
-    monday = now - timedelta(days=now.weekday())
-    date_required = monday.date()
+    # monday = now - timedelta(days=now.weekday())
+    # date_required = monday.date()
+    date_required = now.date()
     # weekely schedule monday to sunday
-    week_days = 7
+    week_days = 5
     x = 0
 
     for day in range(week_days):
@@ -97,9 +96,12 @@ class SlotList(APIView):
             # slot_qs = Slot.objects.all().filter(slot_id)
 
             slot_qs = Slot.objects.all()
+
+            print(slot_qs.values_list())
             serializer = SlotSerializer(slot_qs, many=True)
+            # print("serializer : ", type(serializer.data))
             return DjangoRestResponse(
-                {"success": "Success", "data": serializer.data},
+                {"success": "Success", "Slot": serializer.data},
                 status=status.HTTP_200_OK,
             )
         except Slot.DoesNotExist:
@@ -120,11 +122,12 @@ class SlotList(APIView):
                 print("====================", request.user)
                 ##for specific property owner can make slots
                 try:
-                    request.data["property_id"]
-                    property_id = request.GET.get("property_id")
+
+                    property_id = request.data["property_id"]
                     property_instance = Property.objects.get(pk=property_id)
+                    print(f"DEBUG : {property_instance.id}")
                     slots(property_obj=property_instance)
-                    print(f"DEBUG : {property_instance}")
+
                 except Property.DoesNotExist:
                     return DjangoRestResponse(
                         {

@@ -85,23 +85,56 @@ def slots(property_obj):
         date_required = date_required + timedelta(days=1)
 
 
+def transform_slot_data(date, day):
+    day_list = []
+    slot_qs = Slot.objects.all().filter(date=date)
+    slot_qs = slot_qs.values_list(
+        "date", "start_time", "end_time", "is_available", "booking"
+    )
+
+    for data in slot_qs:
+        if data[0] == date:
+            obj = {
+                "date": data[0].strftime("%m/%d/%Y"),
+                "start_time": data[1].strftime("%X"),
+                "end_time": data[2].strftime("%X"),
+                "is_available": data[3],
+                "booking": data[4],
+            }
+            day_list.append(obj)
+            # print(data[0], data[1], data[2], data[3])
+
+    return day_list
+
+
 class SlotList(APIView):
     authentication_classes = [TokenAuthentication]
     permission_classes = [IsAuthenticated]
 
     def get(self, request, *args, **kwargs):
+        slot = {}
         try:
+            if (
+                request.GET.get("property_id") != None
+                and request.GET.get("property_id") != ""
+            ):
+                property_id = request.GET.get("property_id")
+                slot_qs = Slot.objects.all().filter(property=property_id)
 
-            # slot_id = request.GET.get("slot_id")
-            # slot_qs = Slot.objects.all().filter(slot_id)
+            else:
+                # slot_qs = Slot.objects.all()
+                slot_qs = Slot.objects.order_by("date").distinct("date")
+                date = slot_qs.values_list("date")
 
-            slot_qs = Slot.objects.all()
+                for i in date:
 
-            print(slot_qs.values_list())
-            serializer = SlotSerializer(slot_qs, many=True)
-            # print("serializer : ", type(serializer.data))
+                    day_list = transform_slot_data(date=i[0], day=i[0].strftime("%A"))
+                    slot[i[0].strftime("%A")] = day_list
+
+            print(slot)
+            # serializer = SlotSerializer(slot_qs, many=True)
             return DjangoRestResponse(
-                {"success": "Success", "Slot": serializer.data},
+                {"success": "Success", "Slot": slot},
                 status=status.HTTP_200_OK,
             )
         except Slot.DoesNotExist:
@@ -119,7 +152,7 @@ class SlotList(APIView):
             raise NotFound
         else:
             if request.user.role.name == "Owner" or request.user.role.name == "Admin":
-                print("====================", request.user)
+
                 ##for specific property owner can make slots
                 try:
 
@@ -136,16 +169,7 @@ class SlotList(APIView):
                         },
                         status=status.HTTP_200_OK,
                     )
-                ##for multiple property owner can make same slots
-                """
-                property_obj_qs = Property.objects.filter(owner=request.user)
-                print(property_obj_qs)
-                print("count", property_obj_qs.count())
-                for property_obj in property_obj_qs:
-                    print(type(property_obj))
-                    slots(property_obj=property_obj)
-                    print("==========================end for loop")
-                """
+
                 return DjangoRestResponse(
                     {
                         "success": "Success",

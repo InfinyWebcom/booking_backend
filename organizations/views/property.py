@@ -6,12 +6,11 @@ from rest_framework import status
 from rest_framework.exceptions import ParseError
 from rest_framework.authentication import TokenAuthentication
 from rest_framework.permissions import IsAuthenticated
-from organizations.models.property import Amenity, Property
+from organizations.models.property import Amenity, Property, Images
 from organizations.models.turf_category import TurfCategory
 from accounts.models import Role, User
 from organizations.serializers.property_serializer import (
     PropertySerializer,
-    AmenitySerializer,
 )
 import requests
 import base64
@@ -95,11 +94,13 @@ class Properties(APIView):
             ):
                 property_id = request.GET.get("property_id")
                 property_qs = Property.objects.all().filter(pk=property_id)
-                property_instance = Property.objects.get(pk=property_id)
-                amenity_obj = property_instance.amenity.all()
 
-                print(f"DEBUG:amenities {amenity_obj}")
+                # property_instance = Property.objects.get(pk=property_id)
+                # amenity_obj = property_instance.amenity.all()
 
+                # print(f"DEBUG:amenities {amenity_obj}")
+                images_qs = Images.objects.all().filter(property=property_id)
+                print(f"DEBUG:images {images_qs}")
             else:
 
                 property_qs = Property.objects.all()
@@ -174,7 +175,8 @@ class Properties(APIView):
                 for data in amenities_list:
                     amenity_instance = Amenity.objects.get(name=data)
                     property_object.amenity.add(amenity_instance)
-
+                for url in url_list:
+                    Img_obj = Images.objects.create(image=url, property=property_object)
                 return DjangoRestResponse(
                     {"status": "Success", "message": "Property Added Successfully"},
                     status=status.HTTP_201_CREATED,
@@ -201,17 +203,16 @@ class Properties(APIView):
 
     def delete(self, request):
         if request.user.role.name == "Owner" or request.user.role.name == "Admin":
-            property_id = request.GET.get("property_id")
-            print(type(property_id))
-            property_id_list = property_id.split(",")
-            print(property_id_list)
-            print(type(property_id_list))
             try:
                 if (
                     request.GET.get("property_id") != None
                     and request.GET.get("property_id") != ""
                 ):
                     property_id = request.GET.get("property_id")
+                    print(type(property_id))
+                    property_id_list = property_id.split(",")
+                    print(property_id_list)
+                    print(type(property_id_list))
                     for property_id in property_id_list:
                         property_instance = Property.objects.get(
                             pk=property_id

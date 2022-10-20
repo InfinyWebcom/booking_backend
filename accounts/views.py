@@ -1,3 +1,4 @@
+from pickle import TRUE
 from django.shortcuts import render
 
 # Create your views here.
@@ -17,9 +18,54 @@ from rest_framework.authtoken.models import Token
 from accounts.serializers import *
 from datetime import datetime
 from django.utils import timezone
-import smtplib
-import pytz
-from django.conf import settings
+
+from organizations.common.email import send_an_email
+
+
+def new_user(request):
+    email = request.data["email"]
+    password = request.data["password"]
+    username = request.data["username"]
+
+    first_name = request.data["first_name"]
+    last_name = request.data["last_name"]
+    contact = request.data["contact"]
+
+    if User.objects.filter(email=email).exists():
+        return DjangoRestResponse(
+            {"status": "Error", "message": f"Email already exists"},
+            status=status.HTTP_200_OK,
+        )
+    try:
+        role_name = request.data[
+            "role_name"
+        ]  # i/p should be in this format : Owner/User/Admin
+        role_obj = Role.objects.get(name=role_name)
+    except Role.DoesNotExist:
+        return DjangoRestResponse(
+            {
+                "status": "Success",
+                "message": f"please provide proper input(User/Owner/Admin) or object does not exists",
+            },
+            status=status.HTTP_200_OK,
+        )
+
+    print(f"DEBUG: Role object: {(role_obj)}")
+    new_user = User.objects.create_user(
+        email,
+        password,
+        first_name=first_name,
+        last_name=last_name,
+        username=username,
+        contact=contact,
+        role=role_obj,
+        is_signup=True,
+    )
+    print(f"DEBUG : Created user object {new_user}")
+
+    # Defining The Message
+    message = "Welcome to Turf"
+    send_an_email(receiver_email=email, message=message)
 
 
 class PostWelcomeEmailRequestSerializer(serializers.Serializer):
@@ -41,18 +87,29 @@ class Users(APIView):
         # names = [user.name for user in User.objects.all()]
         # return DjangoRestResponse(names)
         if request.GET.get("user_role") != None and request.GET.get("user_role") != "":
+
             user_role = request.GET.get("user_role")
             user_role_id = Role.objects.get(name=user_role)
             user_obj = User.objects.all().filter(role_id=user_role_id)
+
+        elif request.GET.get("user_id") != None and request.GET.get("user_id") != "":
+            print("================coming")
+            user_id = request.GET.get("user_id")
+            # user_role_id = Role.objects.get(name=user_role)
+            # user_obj = User.objects.all().filter(role_id=user_role_id)
+
+            user_obj = User.objects.all().filter(id=user_id)
+            print(user_obj)
 
         else:
             user_obj = User.objects.all()
 
         serializer = UserSerializer(user_obj, many=True)
+        print("serializing==================>", serializer.data)
         return DjangoRestResponse(
             {
                 "success": "Success",
-                "totalcount": (user_obj.count()),
+                # "totalcount": (user_obj.count()),
                 "users": serializer.data,
             },
             status=status.HTTP_200_OK,
@@ -62,70 +119,7 @@ class Users(APIView):
     def post(self, request, *args, **kwargs):
 
         if request.user.role.name == "Admin":
-            email = request.data["email"]
-            if User.objects.filter(email=email).exists():
-                return DjangoRestResponse(
-                    {"status": "Error", "message": f"Email already exists"},
-                    status=status.HTTP_200_OK,
-                )
-            password = request.data["password"]
-            username = request.data["username"]
-
-            first_name = request.data["first_name"]
-            last_name = request.data["last_name"]
-            contact = request.data["contact"]
-            try:
-                role_name = request.data[
-                    "role_name"
-                ]  # i/p should be in this format : Owner/User/Admin
-                role_obj = Role.objects.get(name=role_name)
-            except Role.DoesNotExist:
-                return DjangoRestResponse(
-                    {
-                        "status": "Success",
-                        "message": f"please provide proper input(User/Owner/Admin) or object does not exists",
-                    },
-                    status=status.HTTP_200_OK,
-                )
-
-            print(f"DEBUG: Role object: {(role_obj)}")
-            new_user = User.objects.create_user(
-                email,
-                password,
-                first_name=first_name,
-                last_name=last_name,
-                username=username,
-                contact=contact,
-                role=role_obj,
-                is_signup=True,
-            )
-            # print(f"DEBUG : Created user object {new_user}")
-            try:
-                smtp_gmail = settings.SMTP["EMAIL_HOST"]["SMTP_GMAIL"]
-                smtp_port = settings.SMTP["EMAIL_PORT"]
-                login_user = settings.LOGIN_USER
-                login_pw = settings.LOGIN_PW
-
-                # Create your SMTP session
-
-                smtp = smtplib.SMTP(smtp_gmail, smtp_port)
-                # Use TLS to add security
-                smtp.starttls()
-                # User Authentication
-                smtp.login(login_user, login_pw)
-                # Defining The Message
-                message = "Welcome to Turf"
-
-                # Sending the Email
-                smtp.sendmail(login_user, email, message)
-
-                # Terminating the session
-                smtp.quit()
-                print("Email sent successfully!")
-
-            except Exception as e:
-                print("Something went wrong....", e)
-
+            new_user(request=request)
             return DjangoRestResponse(
                 {"status": "Success", "message": "User added Successfully"},
                 status=status.HTTP_201_CREATED,
@@ -135,12 +129,13 @@ class Users(APIView):
             return DjangoRestResponse(
                 {
                     "status": "Error",
-                    "message": "User/Owner role cannot be add property",
+                    "message": "Only admin can add user/owner in the system",
                 },
                 status=status.HTTP_200_OK,
             )
 
     def delete(self, request):
+        """
         userid_list = request.data["user_id"]
         try:
             for user_id in userid_list:
@@ -163,10 +158,46 @@ class Users(APIView):
                 },
                 status=status.HTTP_404_NOT_FOUND,
             )
+        """
+        # user_id = request.GET.get("property_id")
+        # print(type(user_id))
+        # user_id_list = user_id.split(",")
+        # print(user_id_list)
+        # print(type(user_id_list))
+        try:
+            if request.GET.get("user_id") != None and request.GET.get("user_id") != "":
+                user_id = request.GET.get("user_id")
+                print(type(user_id))
+                user_id_list = user_id.split(",")
+                print(user_id_list)
+                print(type(user_id_list))
+                for user_id in user_id_list:
+                    user_instance = User.objects.get(pk=user_id).delete()
+                return DjangoRestResponse(
+                    {
+                        "status": "Success",
+                        "message": "User deleted successfully",
+                    },
+                    status=status.HTTP_200_OK,
+                )
+        except User.DoesNotExist:
+
+            return DjangoRestResponse(
+                {
+                    "status": "Error",
+                    "message": "User not found",
+                },
+                status=status.HTTP_200_OK,
+            )
 
     def patch(self, request):
         user_id = request.data["user_id"]
         try:
+            # if request.GET.get("user_id") != None and request.GET.get("user_id") != "":
+            #     user_id = request.GET.get("user_id")
+            # user_role_id = Role.objects.get(name=user_role)
+            # user_obj = User.objects.all().filter(role_id=user_role_id)
+
             user_obj = User.objects.get(id=user_id)
             serializer = UserSerializer(user_obj, data=request.data, partial=True)
             serializer.is_valid(raise_exception=True)
@@ -191,47 +222,7 @@ class Users(APIView):
 
 @api_view(["POST"])
 def sign_up(request):
-    email = request.data["email"]
-    password = request.data["password"]
-    username = request.data["username"]
-
-    first_name = request.data["first_name"]
-    last_name = request.data["last_name"]
-    contact = request.data["contact"]
-
-    if User.objects.filter(email=email).exists():
-        return DjangoRestResponse(
-            {"status": "Error", "message": f"Email already exists"},
-            status=status.HTTP_200_OK,
-        )
-    try:
-        role_name = request.data[
-            "role_name"
-        ]  # i/p should be in this format : Owner/User/Admin
-        role_obj = Role.objects.get(name=role_name)
-    except Role.DoesNotExist:
-        return DjangoRestResponse(
-            {
-                "status": "Success",
-                "message": f"Please provide proper input(User/Owner/Admin) or object does not exists",
-            },
-            status=status.HTTP_200_OK,
-        )
-
-    print(f"DEBUG: Role object: {(role_obj)}")
-    new_user = User.objects.create_user(
-        email,
-        password,
-        first_name=first_name,
-        last_name=last_name,
-        username=username,
-        contact=contact,
-        role=role_obj,
-        is_signup=True,
-    )
-
-    print(f"DEBUG : Created user object {new_user}")
-
+    new_user(request=request)
     return DjangoRestResponse(
         {"status": "Success", "message": "User added successfully"},
         status=status.HTTP_201_CREATED,

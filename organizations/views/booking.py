@@ -1,6 +1,11 @@
 from rest_framework.views import APIView
 from rest_framework.response import Response as DjangoRestResponse
 from rest_framework import status
+from rest_framework.decorators import (
+    api_view,
+    permission_classes,
+    authentication_classes,
+)
 from rest_framework.authentication import TokenAuthentication
 from rest_framework.permissions import IsAuthenticated
 from organizations.models.property import Property
@@ -12,6 +17,8 @@ from accounts.models import User
 
 from rest_framework.exceptions import ParseError
 from slotapp.models.slot import Slot
+
+from organizations.common.email import send_an_email
 
 
 class Booking(APIView):
@@ -32,9 +39,11 @@ class Booking(APIView):
     def post(self, request, *args, **kwargs):
         if request.user.role.name == "User" or request.user.role.name == "Admin":
 
-            user_instance = request.user
+            # user_instance = request.user
+            user_id = request.data["user_id"]
 
-            print(f"{user_instance}")
+            user_instance = User.objects.get(id=user_id)
+
             # step 1: user will see the all available property into dbs
             # step 2: user will select property as per his choice
             # step 3: once he are done with this process we will get property_id,property_rent
@@ -55,7 +64,7 @@ class Booking(APIView):
                     print("not available u can select available slots", available_slot)
 
             slot_id_list = request.data["slot_id"]
-            print(f"Selected slot id list{slot_id_list}")
+            print(f"Selected slot id list========================{(slot_id_list)}")
 
             # step 6 :he will select payment option
             payment_mode = request.data["payment_mode"]
@@ -63,18 +72,23 @@ class Booking(APIView):
             total_amount = property_obj.rent * len(slot_id_list)
             print("Total amount : ", total_amount)
 
-            paying_amt = request.data["payment_amt"]
-            print("Paying amount : ", paying_amt)
+            # paying_amt = request.data["payment_amt"]
+            # print("Paying amount : ", paying_amt)
             print(property_obj, "for this property")
 
+            # """
             if payment_mode == "ONLINE":
+
                 user_obj = User.objects.get(email=request.user)
                 print("wallet", user_obj.wallet)
+                initial_principal_balance = user_obj.wallet
+
                 if user_obj.wallet != 0 and user_obj.wallet > total_amount:
                     balance_amount = user_obj.wallet - total_amount
                     user_obj.wallet = balance_amount
                     user_obj.save()
                     print("after paying online wallet", user_obj.wallet)
+
                 elif user_obj.wallet != 0 and user_obj.wallet < total_amount:
                     return DjangoRestResponse(
                         {
@@ -99,23 +113,6 @@ class Booking(APIView):
                     selected_slot_id.booking = bookingDetails_tuple
                     selected_slot_id.save()
 
-            elif (request.data["cancel"]) == "cancel":
-
-                for slot_id in slot_id_list:
-                    selected_slot_id = Slot.objects.get(pk=slot_id)
-                    selected_slot_id.is_available = True
-                    selected_slot_id.save()
-
-                bookingDetails_tuple.isBooked = False
-                bookingDetails_tuple.save()
-                return DjangoRestResponse(
-                    {
-                        "status": "sucess",
-                        "message": "booking cancelled ",
-                    },
-                    status=status.HTTP_201_CREATED,
-                )
-
             if bookingDetails_tuple.isBooked == True:
                 Transaction.objects.get_or_create(
                     rent_amount=total_amount,
@@ -123,6 +120,10 @@ class Booking(APIView):
                     user=user_instance,
                     booking=bookingDetails_tuple,
                 )
+                # Defining The Message
+                message = f"Initial Amount Was INR {initial_principal_balance}\n  Debit INR {total_amount} \n Balance INR {user_obj.wallet}"
+                send_an_email(receiver_email=user_obj.email, message=message)
+
                 return DjangoRestResponse(
                     {
                         "status": "sucess",
@@ -146,3 +147,46 @@ class Booking(APIView):
                 },
                 status=status.HTTP_200_OK,
             )
+        # """
+        # return DjangoRestResponse(
+        #     {
+        #         "status": "testing",
+        #         "message": " Role cannot be booked turf",
+        #     },
+        #     status=status.HTTP_200_OK,
+        # )
+
+
+@api_view(["POST"])
+@authentication_classes([TokenAuthentication])
+@permission_classes([IsAuthenticated])
+def cancel_booking(request):
+    property_id = request.data["property_id"]
+    booking_id = request.data["booking_id"]
+    slot_id_list = request.data["slot_id"]
+    for slot_id in slot_id_list:
+        selected_slot_id = Slot.objects.get(pk=slot_id)
+        print(f"selected_slot_id: {selected_slot_id}")
+        print(f"property id of selected_slot_id  : {selected_slot_id.property.id}")
+        if selected_slot_id.property.id == property_id:
+            selected_slot_id.is_available = True
+            selected_slot_id.booking = None
+            selected_slot_id.save()
+        else:
+            return DjangoRestResponse(
+                {
+                    "status": "error",
+                    "message": "wrong property id",
+                },
+                status=status.HTTP_201_CREATED,
+            )
+    bookingDetails_instance = BookingDetails.objects.get(id=booking_id)
+    bookingDetails_instance.isBooked = False
+    bookingDetails_instance.save()
+    return DjangoRestResponse(
+        {
+            "status": "sucess",
+            "message": "booking cancelled ",
+        },
+        status=status.HTTP_201_CREATED,
+    )

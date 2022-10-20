@@ -15,6 +15,7 @@ from rest_framework.decorators import (
     permission_classes,
     authentication_classes,
 )
+import pandas as pd
 
 
 @api_view(["GET"])

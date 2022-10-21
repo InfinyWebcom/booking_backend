@@ -27,7 +27,6 @@ def get_daily_slots(start, end, slot, date):
 
 
 def make_slot(value, date_required, property_obj):
-    # print("coming here==================================")
 
     for i in range(len(value)):
         print(date_required, date_required.strftime("%A"))
@@ -69,15 +68,9 @@ def make_slot(value, date_required, property_obj):
                 slot=slot_duration,
                 date=date_required,
             )
-            # print("+++++++++++++", updated_end_time_fmt)
+            # print(f"Debug : +++++++++++++{updated_end_time_fmt}")
             # print("else executed")
 
-        # print(
-        #     "--------------------------------------------->",
-        #     start1,
-        #     d,
-        #     slot_duration1,
-        # )
         print(f"Debug:Slots{type(slot)}")
         print("????????????????TIME??????????????????????")
         for data in range(len(slot) - 1):
@@ -88,16 +81,7 @@ def make_slot(value, date_required, property_obj):
                 end_time=slot[data + 1].time(),
                 property=property_obj,
             )
-            # for data in range(len(slot) - val):
-            # for sl in slot:
-            #     print(sl)
-            # slot_object, slot_created = Slot.objects.get_or_create(
-            #     date=date_required,
-            #     start_time=slot[data].time(),
-            #     end_time=slot[data + 1].time(),
-            #     property=property_obj,
-            # )
-        # print(slot[data].time(), slot[data + 1].time())
+
         print("????????????????TIME??????????????????????")
     print("==================finish=================", date_required.strftime("%A"))
 

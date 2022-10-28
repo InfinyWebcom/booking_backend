@@ -135,30 +135,7 @@ class Users(APIView):
             )
 
     def delete(self, request):
-        """
-        userid_list = request.data["user_id"]
-        try:
-            for user_id in userid_list:
-                user = User.objects.get(pk=user_id).delete()
 
-                print(f"DEBUG: user id: {(user_id)}")
-            return DjangoRestResponse(
-                {
-                    "status": "Sucess",
-                    "message": "User deleted successfully",
-                },
-                status=status.HTTP_200_OK,
-            )
-        except User.DoesNotExist:
-
-            return DjangoRestResponse(
-                {
-                    "status": "Error",
-                    "message": "User not found",
-                },
-                status=status.HTTP_404_NOT_FOUND,
-            )
-        """
         # user_id = request.GET.get("property_id")
         # print(type(user_id))
         # user_id_list = user_id.split(",")

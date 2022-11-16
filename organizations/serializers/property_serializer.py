@@ -10,15 +10,16 @@ class AmenitySerializer(serializers.ModelSerializer):
         fields = ["id", "name"]
 
 
-# class ImageSerializer(serializers.ModelSerializer):
-#     class Meta:
-#         model = Images
-#         fields = ["id", "image"]
+class ImageSerializer(serializers.ModelSerializer):
+    class Meta:
+        model = Images
+        fields = ["id", "property", "image"]
 
 
 class PropertySerializer(serializers.ModelSerializer):
     turf_category = TurfCategorySerializer(required=True)
     amenity = AmenitySerializer(many=True)
+    # images = ImageSerializer(many=True)
 
     class Meta:
         model = Property
@@ -37,9 +38,9 @@ class PropertySerializer(serializers.ModelSerializer):
         ]
 
 
-class PropertyWithImageSerializer(serializers.ModelSerializer):
-    # property = PropertySerializer(required=True, many=True)
+# class PropertyImageSerializer(serializers.ModelSerializer):
+#     property_data = PropertySerializer(required=True, many=True)
 
-    class Meta:
-        model = Images
-        fields = ("id", "image")
+#     class Meta:
+#         model = Images
+#         fields = ["id", "image", "property_data"]

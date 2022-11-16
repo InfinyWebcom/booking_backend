@@ -1,4 +1,3 @@
-from pickle import TRUE
 from django.shortcuts import render
 
 # Create your views here.
@@ -20,6 +19,7 @@ from datetime import datetime
 from django.utils import timezone
 
 from organizations.common.email import send_an_email
+from django.core.mail import send_mail
 
 
 def new_user(request):
@@ -270,4 +270,53 @@ def sign_out(request):
     return DjangoRestResponse(
         {"status": "Success", "message": f"Successfully logged out."},
         status=status.HTTP_200_OK,
+    )
+
+
+@api_view(["POST"])
+def password_reset(request):
+
+    user_email = request.data["user_email"]
+    if User.objects.filter(email=user_email).exists():
+        message = f"i have forgot your password http://192.168.29.248:8000/accounts/render-test"
+
+        send_an_email(receiver_email=user_email, message=message)
+
+        return DjangoRestResponse(
+            {"status": "success", "message": f"Email already exists"},
+            status=status.HTTP_200_OK,
+        )
+    else:
+        return DjangoRestResponse(
+            {"status": "Success", "message": f" {user_email} doesn't exist"},
+            status=status.HTTP_200_OK,
+        )
+
+
+@api_view(["POST"])
+def set_reset_password(request):
+    user_email = request.data["user_email"]
+    user_password = request.data["user_password"]
+    user_object = User.objects.get(email=user_email)
+    user_object.set_password(user_password)
+    user_object.save()
+
+    print(user_object)
+
+    return DjangoRestResponse(
+        {
+            "status": "Success",
+            "message": f" {user_email} Successfully password updated ",
+        },
+        status=status.HTTP_200_OK,
+    )
+
+
+@api_view(["GET"])
+def render_test(request):
+
+    return render(
+        request=request,
+        template_name="password_reset.html",
+        context={"password_reset_form": "password_reset_form"},
     )

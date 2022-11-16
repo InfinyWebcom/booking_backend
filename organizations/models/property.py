@@ -46,7 +46,7 @@ class Property(models.Model):
 
 
 class Images(models.Model):
-    image = models.CharField(max_length=100, blank=True, default="")
+    image = models.CharField(max_length=255, blank=True, default="")
     property = models.ForeignKey(
         Property, on_delete=models.CASCADE, related_name="property_images", default=""
     )

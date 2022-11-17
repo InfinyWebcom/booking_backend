@@ -203,8 +203,7 @@ class SlotList(APIView):
                 ##for specific property owner can make slots
                 try:
                     days = request.data
-                    # print(("=====================", days))
-                    # print(("=====================", type(days)))
+
                     property_id = request.data["property_id"]
                     property_instance = Property.objects.get(pk=property_id)
                     print(f"DEBUG : {property_instance.id}")

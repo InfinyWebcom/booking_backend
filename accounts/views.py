@@ -135,12 +135,6 @@ class Users(APIView):
             )
 
     def delete(self, request):
-
-        # user_id = request.GET.get("property_id")
-        # print(type(user_id))
-        # user_id_list = user_id.split(",")
-        # print(user_id_list)
-        # print(type(user_id_list))
         try:
             if request.GET.get("user_id") != None and request.GET.get("user_id") != "":
                 user_id = request.GET.get("user_id")

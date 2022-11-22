@@ -19,7 +19,7 @@ from datetime import datetime
 from django.utils import timezone
 
 from organizations.common.email import send_an_email
-from django.core.mail import send_mail
+import random
 
 
 def new_user(request):
@@ -65,7 +65,8 @@ def new_user(request):
 
     # Defining The Message
     message = "Welcome to Turf"
-    send_an_email(receiver_email=email, message=message)
+    subject = f"welcome-{username}"
+    send_an_email(receiver_email=email, message=message, sub=subject)
 
 
 class PostWelcomeEmailRequestSerializer(serializers.Serializer):
@@ -271,10 +272,23 @@ def sign_out(request):
 def password_reset(request):
 
     user_email = request.data["user_email"]
+    print(user_email)
     if User.objects.filter(email=user_email).exists():
-        message = f"i have forgot your password http://192.168.29.248:8000/accounts/render-test"
 
-        send_an_email(receiver_email=user_email, message=message)
+        fixed_digits = 6
+        unique_code = random.randrange(111111, 999999, fixed_digits)
+
+        print(unique_code)
+
+        # make an entry into User_database
+        user_object = User.objects.get(email=user_email)
+        user_object.temp_code = unique_code
+        user_object.temp_timestamp = datetime.now()
+        user_object.save()
+        subject = f"reset password link"
+        message = f"link to set new password http://localhost:3000/set-password-generated-link/{unique_code}/{user_email}"
+
+        send_an_email(receiver_email=user_email, message=message, sub=subject)
 
         return DjangoRestResponse(
             {"status": "success", "message": f"Email already exists"},
@@ -288,29 +302,54 @@ def password_reset(request):
 
 
 @api_view(["POST"])
-def set_reset_password(request):
-    user_email = request.data["user_email"]
-    user_password = request.data["user_password"]
-    user_object = User.objects.get(email=user_email)
-    user_object.set_password(user_password)
-    user_object.save()
-
-    print(user_object)
-
+def set_reset_password(request, temp_code, email_id):
+    user_password = request.data["password"]
+    current_datetime = datetime.now()
+    user_object = User.objects.get(email=email_id)
+    diff = int(current_datetime.strftime("%M")) - int(
+        user_object.temp_timestamp.strftime("%M")
+    )
+    if temp_code == user_object.temp_code and diff < 2:
+        user_object.set_password(user_password)
+        user_object.save()
+        return DjangoRestResponse(
+            {
+                "status": "Success",
+                "message": f" Successfully password updated ",
+            },
+            status=status.HTTP_200_OK,
+        )
     return DjangoRestResponse(
         {
-            "status": "Success",
-            "message": f" {user_email} Successfully password updated ",
+            "status": "Error",
+            "message": f" Link has expried ",
         },
         status=status.HTTP_200_OK,
     )
 
 
 @api_view(["GET"])
-def render_test(request):
-
-    return render(
-        request=request,
-        template_name="password_reset.html",
-        context={"password_reset_form": "password_reset_form"},
+def set_password_generated_link(request, temp_code, email_id):
+    current_datetime = datetime.now()
+    user_object = User.objects.get(email=email_id)
+    diff = int(current_datetime.strftime("%M")) - int(
+        user_object.temp_timestamp.strftime("%M")
     )
+
+    if temp_code == user_object.temp_code and diff < 2:
+
+        return DjangoRestResponse(
+            {
+                "status": "Success",
+                "message": f" Link is alive ",
+            },
+            status=status.HTTP_200_OK,
+        )
+    else:
+        return DjangoRestResponse(
+            {
+                "status": "Error",
+                "message": f" Link has expried ",
+            },
+            status=status.HTTP_200_OK,
+        )

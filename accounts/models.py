@@ -56,7 +56,8 @@ class User(AbstractUser):
     wallet = models.IntegerField(default=0)
     last_login_time = models.DateTimeField(max_length=100, null=True, blank=True)
     last_logout_time = models.DateTimeField(max_length=100, null=True, blank=True)
-
+    temp_code = models.BigIntegerField(null=True, blank=True)
+    temp_timestamp = models.DateTimeField(max_length=100, null=True, blank=True)
     role = models.ForeignKey(
         Role,
         on_delete=models.PROTECT,

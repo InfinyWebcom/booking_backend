@@ -172,7 +172,7 @@ SMTP = {
         "SMTP_GMAIL": "smtp.gmail.com",
         "SMTP_YAHOO": "smtp.yahoo.com",
     },
-    "EMAIL_PORT": 587,
+    "EMAIL_PORT": 465,  # 587,
 }
 LOGIN_USER = env("EMAIL_HOST_USER")
 LOGIN_PW = env("EMAIL_HOST_PASSWORD")

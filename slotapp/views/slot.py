@@ -11,8 +11,6 @@ from organizations.models.property import Property
 from slotapp.serializers.slot_serializer import SlotSerializer
 
 # Create your views here.
-
-
 def get_daily_slots(start, end, slot, date):
     # combine start time to respective day
     print("get daily slot=============getdailyslot")
@@ -162,7 +160,6 @@ class SlotList(APIView):
             ):
                 property_id = request.GET.get("property_id")
                 # slot_qs = Slot.objects.all().filter(property=property_id)
-
                 # else:
                 # slot_qs = Slot.objects.all()
                 slot_qs = (

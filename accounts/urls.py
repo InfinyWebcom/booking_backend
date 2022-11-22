@@ -6,7 +6,7 @@ from accounts.views import (
     Users,
     password_reset,
     set_reset_password,
-    render_test,
+    set_password_generated_link,
 )
 
 urlpatterns = [
@@ -14,7 +14,15 @@ urlpatterns = [
     path("sign-in", sign_in, name="sign-in"),
     path("sign-out", sign_out, name="sign-out"),
     path("password-reset", password_reset, name="password-reset"),
-    path("set-reset-password", set_reset_password, name="set-reset-password"),
-    path("render-test", render_test, name="render-test"),
+    path(
+        "set-reset-password/<int:temp_code>/<str:email_id>",
+        set_reset_password,
+        name="set-reset-password",
+    ),
+    path(
+        "set-password-generated-link/<int:temp_code>/<str:email_id>",
+        set_password_generated_link,
+        name="set-password-generated-link",
+    ),
     path("users", Users.as_view(), name="users"),
 ]
